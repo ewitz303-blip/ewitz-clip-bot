@@ -327,14 +327,20 @@ def build_caption_overlays(vtt_path, clip_start, clip_duration):
 # ─────────────────────────────────────────────
 
 def _yt_dlp_base_args():
-    """Base yt-dlp args — web client with proxy and cookies."""
-    args = ["--extractor-args", "youtube:player_client=web,ios"]
-    cookies = Path("cookies.txt")
-    if cookies.exists():
-        args += ["--cookies", str(cookies)]
-    proxy = os.environ.get("PROXY_URL")
-    if proxy:
-        args += ["--proxy", proxy]
+    """Use Chrome cookies on Mac, cookies.txt + proxy on server."""
+    args = []
+    if os.environ.get("RAILWAY_ENVIRONMENT"):
+        # Running on Railway — use cookies file and proxy
+        args += ["--extractor-args", "youtube:player_client=web,ios"]
+        cookies = Path("cookies.txt")
+        if cookies.exists():
+            args += ["--cookies", str(cookies)]
+        proxy = os.environ.get("PROXY_URL")
+        if proxy:
+            args += ["--proxy", proxy]
+    else:
+        # Running locally on Mac — use Chrome cookies directly
+        args += ["--cookies-from-browser", "chrome"]
     return args
 
 def download_video(url):

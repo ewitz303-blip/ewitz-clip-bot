@@ -19,6 +19,7 @@ lsof -ti :5001 | xargs kill -9 2>/dev/null
 
 # Kill any leftover tunnels
 pkill -f ngrok 2>/dev/null
+pkill -f "localhost.run" 2>/dev/null
 pkill -f cloudflared 2>/dev/null
 sleep 1
 
@@ -36,14 +37,13 @@ if ! lsof -ti :5001 > /dev/null 2>&1; then
 fi
 echo "  ✓ App running"
 
-# Start localhost.run tunnel
-echo "  [2/2] Starting share tunnel..."
-ssh -o StrictHostKeyChecking=no -R 80:localhost:5001 nokey@localhost.run > /tmp/ewitz_tunnel.log 2>&1 &
+# Start ngrok with permanent domain
+echo "  [2/2] Starting ngrok tunnel..."
+/opt/homebrew/bin/ngrok http --url=ewitzclipbot.ngrok.app 5001 --log=stdout > /tmp/ewitz_ngrok.log 2>&1 &
 NGROK_PID=$!
-sleep 8
+sleep 5
 
-# Grab the public URL
-PUBLIC_URL=$(grep -o 'https://[a-zA-Z0-9]*\.lhr\.life' /tmp/ewitz_tunnel.log | head -1)
+PUBLIC_URL="https://ewitzclipbot.ngrok.app"
 
 echo ""
 echo "  ✓ Local: http://localhost:5001"
