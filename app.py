@@ -327,8 +327,15 @@ def build_caption_overlays(vtt_path, clip_start, clip_duration):
 # ─────────────────────────────────────────────
 
 def _yt_dlp_base_args():
-    """Base yt-dlp args — tv_embedded bypasses bot detection without cookies or JS."""
-    return ["--extractor-args", "youtube:player_client=tv_embedded,ios"]
+    """Base yt-dlp args — web client with proxy and cookies."""
+    args = ["--extractor-args", "youtube:player_client=web,ios"]
+    cookies = Path("cookies.txt")
+    if cookies.exists():
+        args += ["--cookies", str(cookies)]
+    proxy = os.environ.get("PROXY_URL")
+    if proxy:
+        args += ["--proxy", proxy]
+    return args
 
 def download_video(url):
     base = _yt_dlp_base_args()
