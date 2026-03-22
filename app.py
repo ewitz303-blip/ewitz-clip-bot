@@ -26,7 +26,17 @@ load_dotenv(override=True)
 app = Flask(__name__)
 CORS(app)
 
-FFMPEG          = os.environ.get("FFMPEG_PATH", "ffmpeg")
+def _find_ffmpeg():
+    import shutil
+    if p := os.environ.get("FFMPEG_PATH"):
+        return p
+    if p := shutil.which("ffmpeg"):
+        return p
+    for candidate in ["/usr/bin/ffmpeg", "/usr/local/bin/ffmpeg", "/nix/var/nix/profiles/default/bin/ffmpeg", "/opt/homebrew/bin/ffmpeg"]:
+        if os.path.exists(candidate):
+            return candidate
+    return "ffmpeg"
+FFMPEG = _find_ffmpeg()
 CAPTION_OFFSET  = 0.75  # seconds to shift captions earlier (YouTube VTT lags speech)
 DOWNLOADS = Path("downloads")
 OUTPUTS   = Path("outputs")
