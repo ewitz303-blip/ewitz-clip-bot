@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ewitz Clip Bot</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #03030a;
+      --surface: #09090f;
+      --card:    #0d0d16;
+      --border:  #181825;
+      --text:    #f4f4ff;
+      --muted:   #55556e;
+      --purple:  #7c3aed;
+      --cyan:    #22d3ee;
+      --pink:    #e879f9;
+      --green:   #10B981;
+      --orange:  #F97316;
+      --yellow:  #FBBF24;
+    }
+
+    html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; }
+
+    /* ── NOISE TEXTURE ── */
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      background-image:
+        linear-gradient(rgba(124,58,237,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,58,237,0.035) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none; z-index: 0;
+    }
+    body::after {
+      content: "";
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.025) 3px, rgba(0,0,0,0.025) 4px);
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── ORBS ── */
+    .orb { position: fixed; border-radius: 50%; filter: blur(110px); pointer-events: none; z-index: 0; }
+    .orb-1 { width:700px; height:700px; background:rgba(124,58,237,0.16); top:-200px; left:-200px; animation: floatA 12s ease-in-out infinite alternate; }
+    .orb-2 { width:400px; height:400px; background:rgba(232,121,249,0.09); top:400px; right:-120px; animation: floatB 9s ease-in-out infinite alternate; }
+    .orb-3 { width:300px; height:300px; background:rgba(34,211,238,0.07); bottom:80px; left:15%; animation: floatC 14s ease-in-out infinite alternate; }
+    @keyframes floatA { to { transform: translate(50px, 35px); } }
+    @keyframes floatB { to { transform: translate(-35px, 50px); } }
+    @keyframes floatC { to { transform: translate(25px, -40px); } }
+
+    /* ── HERO ENTRANCE ANIMATIONS ── */
+    @keyframes fadeUp { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes titleGlow { 0%,100% { text-shadow: 0 0 60px rgba(124,58,237,0.4); } 50% { text-shadow: 0 0 80px rgba(34,211,238,0.35); } }
+    @keyframes lineSlide { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative; z-index: 1;
+      text-align: center;
+      padding: 80px 20px 52px;
+    }
+
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(124,58,237,0.12);
+      border: 1px solid rgba(124,58,237,0.3);
+      border-radius: 4px; padding: 5px 14px;
+      font-size: 0.68rem; font-weight: 800; color: rgba(124,58,237,0.9);
+      letter-spacing: 2.5px; text-transform: uppercase;
+      margin-bottom: 28px;
+      animation: fadeIn 0.6s ease both;
+    }
+    .hero-badge span { width:6px; height:6px; border-radius:50%; background:var(--cyan); display:inline-block; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+    .hero-title-wrap {
+      position: relative; display: inline-block;
+      animation: fadeUp 0.7s ease 0.1s both;
+      margin-bottom: 8px;
+    }
+
+    .hero h1 {
+      font-size: clamp(3.2rem, 10vw, 7rem);
+      font-weight: 900;
+      letter-spacing: -2px;
+      line-height: 1;
+      margin: 0;
+    }
+    .h1-white {
+      color: #fff;
+      display: block;
+      text-shadow: 0 0 80px rgba(255,255,255,0.15);
+    }
+    .h1-grad {
+      display: block;
+      background: linear-gradient(100deg, var(--cyan) 0%, var(--purple) 55%, var(--pink) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      animation: titleGlow 4s ease-in-out infinite;
+    }
+
+    .hero-divider {
+      width: 80px; height: 2px; margin: 18px auto;
+      background: linear-gradient(90deg, transparent, var(--cyan), var(--purple), transparent);
+      animation: lineSlide 0.8s ease 0.4s both;
+      transform-origin: left;
+    }
+
+    .hero-sub {
+      font-size: 1rem; color: var(--muted);
+      max-width: 400px; margin: 0 auto 40px; line-height: 1.7;
+      animation: fadeUp 0.7s ease 0.3s both;
+      letter-spacing: 0.2px;
+    }
+
+    /* ── INPUT ── */
+    .input-wrap { position: relative; z-index: 10; max-width: 680px; margin: 0 auto; }
+
+    .input-glow {
+      position: absolute; inset: -2px; border-radius: 14px;
+      background: linear-gradient(135deg, var(--purple), var(--cyan));
+      opacity: 0; transition: opacity 0.3s; z-index: -1;
+    }
+
+    .input-box {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 6px 6px 6px 18px;
+      display: flex; align-items: center; gap: 8px;
+      transition: border-color 0.2s;
+    }
+    .input-box:focus-within { border-color: rgba(124,58,237,0.6); }
+    .input-box:focus-within + .input-glow { opacity: 0.25; }
+    .input-box input {
+      flex: 1; background: transparent; border: none; outline: none;
+      font-size: 1rem; color: var(--text); font-family: inherit; padding: 10px 0;
+    }
+    .input-box input::placeholder { color: var(--muted); }
+
+    .btn-analyze {
+      padding: 13px 24px; border: none; border-radius: 8px;
+      font-size: 0.88rem; font-weight: 800; font-family: inherit;
+      letter-spacing: 1px; text-transform: uppercase;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--purple), var(--cyan));
+      color: #fff; white-space: nowrap;
+      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+      box-shadow: 0 0 24px rgba(124,58,237,0.45);
+    }
+    .btn-analyze:hover { transform: scale(1.03); box-shadow: 0 0 36px rgba(124,58,237,0.7); }
+    .btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* ── EFFECTS CONTROLS ── */
+    .effects-row {
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+      padding: 12px 0; border-top: 1px solid var(--border); margin-top: 8px;
+    }
+    .effect-group { display: flex; flex-direction: column; gap: 5px; }
+    .effect-label-sm {
+      font-size: 0.67rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--muted);
+    }
+    .color-swatches { display: flex; gap: 5px; }
+    .swatch {
+      width: 22px; height: 22px; border-radius: 50%; border: 2px solid transparent;
+      cursor: pointer; transition: transform 0.15s, border-color 0.15s;
+      padding: 0;
+    }
+    .swatch:hover { transform: scale(1.2); }
+    .swatch.active { border-color: #fff; transform: scale(1.15); }
+    .pos-toggle, .sub-wrap { display: flex; gap: 4px; }
+    .pos-btn, .sub-btn {
+      padding: 4px 12px; border-radius: 999px; border: 1.5px solid var(--border);
+      background: rgba(255,255,255,0.04); color: var(--muted);
+      font-size: 0.76rem; font-weight: 700; cursor: pointer;
+      font-family: inherit; transition: all 0.15s;
+    }
+    .pos-btn:hover, .sub-btn:hover { border-color: rgba(139,92,246,0.5); color: #a78bfa; }
+    .pos-btn.active, .sub-btn.active {
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      border-color: transparent; color: #fff;
+    }
+
+    /* ── CUSTOM PROMPT ── */
+    .prompt-section { margin-top: 16px; text-align: left; }
+    .prompt-textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 0.93rem; font-family: inherit;
+      color: var(--text); resize: vertical;
+      min-height: 80px; max-height: 180px;
+      transition: border-color 0.2s;
+      line-height: 1.5;
+    }
+    .prompt-textarea::placeholder { color: var(--muted); }
+    .prompt-textarea:focus { outline: none; border-color: var(--purple); }
+    .prompt-toggle {
+      display: flex; align-items: center; gap: 8px;
+      cursor: pointer; user-select: none;
+      font-size: 0.8rem; font-weight: 700;
+      color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.8px; margin-bottom: 10px;
+    }
+    .prompt-toggle:hover { color: #a78bfa; }
+    .prompt-toggle-icon { transition: transform 0.2s; font-style: normal; }
+    .prompt-toggle-icon.open { transform: rotate(90deg); }
+    .prompt-body { display: none; }
+    .prompt-body.open { display: block; }
+
+    /* ── MOOD ── */
+    .mood-section { margin-top: 18px; text-align: left; }
+    .mood-label {
+      font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--muted); margin-bottom: 10px;
+    }
+    .mood-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .mood-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1.5px solid var(--border) !important;
+      border-radius: 999px !important;
+      padding: 8px 18px !important;
+      font-size: 0.84rem !important; font-weight: 600;
+      color: var(--muted); cursor: pointer;
+      transition: all 0.15s; transform: none !important;
+    }
+    .mood-btn:hover { border-color: rgba(124,58,237,0.5) !important; color: var(--cyan); background: rgba(124,58,237,0.08); }
+    .mood-btn.active {
+      background: linear-gradient(135deg, var(--purple), var(--cyan));
+      border-color: transparent !important; color: #fff;
+      box-shadow: 0 0 16px rgba(124,58,237,0.5);
+    }
+
+    /* ── MESSAGES ── */
+    .messages { max-width: 680px; margin: 12px auto 0; }
+    .msg { display: none; padding: 12px 16px; border-radius: 10px; font-size: 0.88rem; }
+    .msg-error   { background: rgba(239,68,68,0.12); color: #fca5a5; border: 1px solid rgba(239,68,68,0.25); }
+    .msg-success { background: rgba(16,185,129,0.12); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.25); }
+
+    /* ── FEATURE GRID ── */
+    .features {
+      position: relative; z-index: 1;
+      max-width: 760px; margin: 56px auto 0;
+      padding: 0 16px;
+    }
+
+    .features-title {
+      text-align: center; font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--muted); margin-bottom: 20px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 14px;
+    }
+
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 18px;
+      text-align: center;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover { border-color: rgba(139,92,246,0.4); transform: translateY(-3px); }
+
+    .feature-icon { font-size: 2rem; margin-bottom: 10px; }
+    .feature-name { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .feature-desc { font-size: 0.76rem; color: var(--muted); line-height: 1.4; }
+
+    /* ── HOW IT WORKS ── */
+    .how {
+      position: relative; z-index: 1;
+      max-width: 760px; margin: 48px auto 0;
+      padding: 0 16px 64px;
+    }
+
+    .how-title {
+      text-align: center; font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--muted); margin-bottom: 20px;
+    }
+
+    .how-steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    .how-step {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 18px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      text-align: center;
+    }
+
+    .step-num {
+      width: 36px; height: 36px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, var(--purple), var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; font-weight: 900; color: #fff;
+      letter-spacing: 0;
+    }
+
+    .step-text { font-size: 0.88rem; color: var(--muted); line-height: 1.45; }
+    .step-title { font-size: 0.95rem; font-weight: 700; color: var(--text); }
+
+    /* ── LOADING OVERLAY ── */
+    .loading-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(7,7,15,0.96);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0;
+      backdrop-filter: blur(12px);
+    }
+
+    .load-inner {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 20px;
+      max-width: 420px; width: 100%; padding: 0 24px;
+    }
+
+    .load-emoji {
+      font-size: 4.5rem;
+      animation: popBounce 0.6s ease-in-out infinite alternate;
+    }
+    @keyframes popBounce {
+      from { transform: scale(1) translateY(0); }
+      to   { transform: scale(1.15) translateY(-12px); }
+    }
+
+    .load-title {
+      font-size: 1.5rem; font-weight: 800; text-align: center;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    .load-sub { font-size: 0.88rem; color: var(--muted); text-align: center; }
+
+    /* Progress steps */
+    .load-steps {
+      display: flex; flex-direction: column; gap: 10px; width: 100%;
+    }
+
+    .load-step {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      transition: all 0.4s;
+    }
+
+    .load-step.active {
+      background: rgba(139,92,246,0.12);
+      border-color: rgba(139,92,246,0.35);
+    }
+
+    .load-step.done {
+      background: rgba(16,185,129,0.08);
+      border-color: rgba(16,185,129,0.25);
+    }
+
+    .step-icon { font-size: 1.1rem; width: 28px; text-align: center; }
+    .step-info { flex: 1; }
+    .step-name { font-size: 0.82rem; font-weight: 700; color: var(--text); }
+    .step-detail { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+    .step-check { font-size: 1rem; }
+
+    /* Progress bar */
+    .progress-wrap {
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .progress-fill {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--purple), var(--pink));
+      width: 0%;
+      transition: width 1.2s ease;
+    }
+
+    /* ── RESULTS ── */
+    .results-wrap {
+      position: relative; z-index: 1;
+      max-width: 760px; margin: 0 auto;
+      padding: 0 16px 80px;
+    }
+
+    /* ── SCORE BANNER ── */
+    .score-banner {
+      background: linear-gradient(135deg, #0f0f1a, #13131f);
+      border: 1px solid var(--border);
+      border-radius: 20px; padding: 28px;
+      display: flex; align-items: center; gap: 24px;
+      flex-wrap: wrap; margin-bottom: 20px;
+      position: relative; overflow: hidden;
+    }
+    .score-banner::before {
+      content: "";
+      position: absolute; top:-40px; left:-40px;
+      width:200px; height:200px;
+      background: radial-gradient(circle, rgba(251,191,36,0.15), transparent 70%);
+    }
+    .score-num {
+      font-size: 5.5rem; font-weight: 900; line-height: 1;
+      background: linear-gradient(135deg, var(--yellow), var(--orange));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .score-right { flex: 1; min-width: 180px; }
+    .score-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 6px; }
+    .score-reason { font-size: 1rem; color: var(--text); line-height: 1.5; }
+
+    .music-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+    .music-chip {
+      background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.25);
+      border-radius: 999px; padding: 7px 14px;
+      font-size: 0.8rem; color: #a78bfa; font-weight: 600;
+    }
+
+    .section-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 18px; flex-wrap: wrap; gap: 10px;
+    }
+    .section-hdr h2 { font-size: 1.3rem; font-weight: 800; }
+
+    /* ── BUTTONS ── */
+    button {
+      font-family: inherit; cursor: pointer; border: none;
+      border-radius: 10px; padding: 10px 18px;
+      font-size: 0.85rem; font-weight: 700;
+      transition: transform 0.12s, opacity 0.12s, box-shadow 0.12s;
+    }
+    button:hover   { opacity: 0.85; transform: translateY(-1px); }
+    button:active  { transform: translateY(0); }
+    button:disabled{ opacity: 0.35; cursor: not-allowed; transform: none; }
+
+    .btn-ghost  { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
+    .btn-purple { background: linear-gradient(135deg, var(--purple), #6D28D9); color:#fff; box-shadow:0 0 12px rgba(139,92,246,0.3); }
+    .btn-green  { background: linear-gradient(135deg, #059669, var(--green)); color:#fff; }
+    .btn-dark   { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+
+    /* ── CLIP CARD ── */
+    .clip-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; overflow: hidden; margin-bottom: 18px;
+      transition: border-color 0.2s;
+    }
+    .clip-card:hover { border-color: rgba(139,92,246,0.35); }
+    .clip-top-bar { height: 4px; }
+    .clip-body { padding: 20px 22px; }
+    .clip-row1 {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; flex-wrap: wrap;
+      gap: 10px; margin-bottom: 14px;
+    }
+    .clip-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .clip-num { font-size: 1.05rem; font-weight: 800; }
+    .time-pill {
+      background: rgba(255,255,255,0.07); border: 1px solid var(--border);
+      border-radius: 8px; padding: 3px 10px;
+      font-size: 0.76rem; font-family: monospace; color: #a78bfa;
+    }
+    .vibe-badge { border-radius: 999px; padding: 5px 12px; font-size: 0.76rem; font-weight: 800; }
+    .vibe-viral  { background:rgba(249,115,22,0.15); color:#fb923c; border:1px solid rgba(249,115,22,0.3); }
+    .vibe-high   { background:rgba(139,92,246,0.15); color:#a78bfa; border:1px solid rgba(139,92,246,0.3); }
+    .vibe-medium { background:rgba(59,130,246,0.15);  color:#93c5fd; border:1px solid rgba(59,130,246,0.3); }
+    .vibe-low    { background:rgba(107,114,128,0.15); color:#9ca3af; border:1px solid rgba(107,114,128,0.3); }
+    .conf-row { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .conf-label { font-size:0.73rem; color:var(--muted); white-space:nowrap; min-width:90px; }
+    .conf-track { flex:1; height:5px; background:rgba(255,255,255,0.08); border-radius:999px; overflow:hidden; }
+    .conf-fill  { height:100%; border-radius:999px; }
+    .reason-text { font-size: 0.88rem; color: #c4b5fd; line-height: 1.55; margin-bottom: 10px; }
+    .post-desc-box {
+      background: rgba(139,92,246,0.08); border-left: 3px solid var(--purple);
+      border-radius: 0 10px 10px 0; padding: 10px 14px;
+      font-size: 0.85rem; color: #ddd6fe; line-height: 1.5; margin-bottom: 14px;
+    }
+    .mood-chip {
+      display:inline-block;
+      background: rgba(236,72,153,0.12); border: 1px solid rgba(236,72,153,0.25);
+      border-radius: 6px; padding: 3px 10px;
+      font-size: 0.72rem; font-weight: 700; color: #f9a8d4;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;
+    }
+    .trans-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+    .trans-chip {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+      border-radius: 8px; padding: 3px 10px; font-size: 0.74rem; color: var(--muted);
+    }
+    .caption-label {
+      font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted); margin-bottom: 6px;
+    }
+    .caption-box {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+      font-size: 0.86rem; white-space: pre-wrap; color: var(--text);
+      line-height: 1.7; margin-bottom: 16px;
+    }
+    .hook-label { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 4px; margin-top: 12px; }
+    .hook-display { font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 14px; }
+    .card-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .player-wrap {
+      display:none; margin-top:16px; border-radius:12px; overflow:hidden;
+      background:#000; border:1px solid var(--border); position:relative;
+    }
+    .player-wrap video { width:100%; display:block; max-height:460px; object-fit:contain; background:#000; }
+    .player-loading {
+      display:none; position:absolute; inset:0;
+      background:rgba(7,7,15,0.85);
+      align-items:center; justify-content:center; gap:10px;
+      font-size:0.86rem; color:#a78bfa;
+    }
+    .mini-spin {
+      width:18px; height:18px;
+      border:3px solid rgba(139,92,246,0.3); border-top-color:var(--purple);
+      border-radius:50%; animation:spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- ── LOADING OVERLAY ── -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="load-inner">
+      <div class="load-emoji" id="loadEmoji">⚡</div>
+      <div class="load-title" id="loadTitle">Ewitz Clip Bot is working...</div>
+      <div class="load-sub"   id="loadSub">Hang tight, this takes ~30–60 seconds</div>
+
+      <div class="progress-wrap">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="load-steps">
+        <div class="load-step active" id="lstep-0">
+          <span class="step-icon">⬇️</span>
+          <div class="step-info">
+            <div class="step-name">Downloading video</div>
+            <div class="step-detail" id="lstep-0-detail">Grabbing from YouTube...</div>
+          </div>
+          <span class="step-check" id="lstep-0-check"></span>
+        </div>
+        <div class="load-step" id="lstep-1">
+          <span class="step-icon">📝</span>
+          <div class="step-info">
+            <div class="step-name">Reading captions</div>
+            <div class="step-detail">Getting exact timestamps</div>
+          </div>
+          <span class="step-check" id="lstep-1-check"></span>
+        </div>
+        <div class="load-step" id="lstep-2">
+          <span class="step-icon">🤖</span>
+          <div class="step-info">
+            <div class="step-name">AI analyzing content</div>
+            <div class="step-detail" id="lstep-2-detail">Finding the best moments...</div>
+          </div>
+          <span class="step-check" id="lstep-2-check"></span>
+        </div>
+        <div class="load-step" id="lstep-3">
+          <span class="step-icon">✂️</span>
+          <div class="step-info">
+            <div class="step-name">Building your clips</div>
+            <div class="step-detail">Almost ready!</div>
+          </div>
+          <span class="step-check" id="lstep-3-check"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <div class="hero-badge"><span></span> EWITZFLICKZ &nbsp;·&nbsp; AI TOOLS</div>
+    <div class="hero-title-wrap">
+      <h1>
+        <span class="h1-white">EWITZ</span>
+        <span class="h1-grad">CLIP BOT</span>
+      </h1>
+    </div>
+    <div class="hero-divider"></div>
+    <p class="hero-sub">Drop a link. Pick a vibe. Get 8 viral-ready clips with live captions — in seconds.</p>
+
+    <div class="input-wrap">
+      <div class="input-box">
+        <span style="font-size:1.1rem">🔗</span>
+        <input type="url" id="urlInput" placeholder="Paste your YouTube link here..." />
+        <button class="btn-analyze" id="analyzeBtn" onclick="analyze()">Generate</button>
+      </div>
+      <div class="input-glow"></div>
+
+      <div class="mood-section">
+        <div class="mood-label">How should we edit it?</div>
+        <div class="mood-grid" id="moodGrid">
+          <button class="mood-btn active" data-mood="auto"         onclick="selectMood(this)">✨ Auto</button>
+          <button class="mood-btn"        data-mood="funny"        onclick="selectMood(this)">😂 Funny</button>
+          <button class="mood-btn"        data-mood="emotional"    onclick="selectMood(this)">😢 Emotional</button>
+          <button class="mood-btn"        data-mood="heartfelt"    onclick="selectMood(this)">❤️ Heartfelt</button>
+          <button class="mood-btn"        data-mood="hype"         onclick="selectMood(this)">🔥 Hype</button>
+          <button class="mood-btn"        data-mood="motivational" onclick="selectMood(this)">💪 Motivational</button>
+          <button class="mood-btn"        data-mood="dramatic"     onclick="selectMood(this)">🎭 Dramatic</button>
+          <button class="mood-btn"        data-mood="educational"  onclick="selectMood(this)">🧠 Educational</button>
+        </div>
+      </div>
+
+      <div class="prompt-section">
+        <div class="prompt-toggle" onclick="togglePrompt(this)">
+          <em class="prompt-toggle-icon" id="promptIcon">▶</em>
+          Tell me exactly what to grab (optional)
+        </div>
+        <div class="prompt-body" id="promptBody">
+          <textarea
+            class="prompt-textarea"
+            id="customPrompt"
+            placeholder="e.g. 'Grab the part around 2 minutes where he talks about the injury' or 'Find the funniest moments with the dog' or 'I want clips of the best crowd reactions'"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="messages">
+      <div class="msg msg-error"   id="errorMsg"></div>
+      <div class="msg msg-success" id="successMsg"></div>
+    </div>
+  </div>
+
+  <!-- ── FEATURES ── -->
+  <div class="features">
+    <div class="features-title">What it does</div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <div class="feature-name">AI Clip Finder</div>
+        <div class="feature-desc">Reads the whole video and finds the 8 moments most likely to blow up</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💬</div>
+        <div class="feature-name">Live Captions</div>
+        <div class="feature-desc">Synced TikTok-style subtitles burned into every clip. Ready to post.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔥</div>
+        <div class="feature-name">Viral Score</div>
+        <div class="feature-desc">Confidence rating and virality prediction for each clip</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎭</div>
+        <div class="feature-name">8 Edit Styles</div>
+        <div class="feature-desc">Funny, hype, emotional, dramatic — AI edits to match your intent</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── HOW IT WORKS ── -->
+  <div class="how">
+    <div class="how-title">How it works</div>
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="step-num">1</div>
+        <div class="step-title">Paste a link</div>
+        <div class="step-text">Any YouTube video. Long, short, doesn't matter.</div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">2</div>
+        <div class="step-title">Set the vibe</div>
+        <div class="step-text">Pick a mood or tell the bot exactly what you want</div>
+      </div>
+      <div class="how-step">
+        <div class="step-num">3</div>
+        <div class="step-title">Download & post</div>
+        <div class="step-text">9:16 flipped clips with live captions. Post straight to TikTok.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── RESULTS ── -->
+  <div class="results-wrap" id="results"></div>
+
+  <script>
+    let currentVideoPath = "";
+    let currentTitle     = "";
+    let currentAnalysis  = {};
+    let selectedMood     = "auto";
+    const clipEffects    = {};
+
+    function getEffects(idx) {
+      return Object.assign({ color: "white", position: "top", activeSubs: true }, clipEffects[idx] || {});
+    }
+    function toggleSub(idx) {
+      clipEffects[idx] = { ...getEffects(idx), activeSubs: true };
+      document.getElementById(`subBtn-${idx}`).classList.add("active");
+      document.getElementById(`subOff-${idx}`).classList.remove("active");
+    }
+    function toggleSubOff(idx) {
+      clipEffects[idx] = { ...getEffects(idx), activeSubs: false };
+      document.getElementById(`subBtn-${idx}`).classList.remove("active");
+      document.getElementById(`subOff-${idx}`).classList.add("active");
+    }
+
+    function togglePrompt(el) {
+      const icon = document.getElementById("promptIcon");
+      const body = document.getElementById("promptBody");
+      body.classList.toggle("open");
+      icon.classList.toggle("open");
+    }
+
+    function selectMood(btn) {
+      document.querySelectorAll(".mood-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      selectedMood = btn.dataset.mood;
+    }
+
+    // ── Mood-specific loading messages ──
+    const MOOD_MESSAGES = {
+      auto:         [["🎬","Scanning for the best moments..."],["🤖","AI is deciding the vibe..."],["🎯","Finding what'll perform best..."]],
+      funny:        [["😂","Hunting for the hilarious moments..."],["💀","Found something that'll make you spit your drink..."],["🤣","This one's actually really funny..."]],
+      emotional:    [["😢","Finding the moments that hit different..."],["💔","Something about this part..."],["✨","This is gonna make people feel things..."]],
+      heartfelt:    [["❤️","Looking for the warm moments..."],["🥹","Found something really beautiful..."],["💝","This one's special..."]],
+      hype:         [["🔥","Scouting peak energy moments..."],["⚡","This part is INSANE..."],["🏆","Found the most intense clip..."]],
+      motivational: [["💪","Finding what'll inspire people..."],["🚀","This moment hits different..."],["✊","People need to hear this..."]],
+      dramatic:     [["🎭","Locating the plot twists..."],["😱","Wait till you see this part..."],["🎬","Cinematic gold right here..."]],
+      educational:  [["🧠","Finding the mind-blowing moments..."],["💡","This fact is wild..."],["📚","Nobody knows this..."]]
+    };
+
+    let loadTimer = null, progressTimer = null;
+    let loadPhase = 0, msgIdx = 0;
+
+    function startLoading() {
+      const overlay  = document.getElementById("loadingOverlay");
+      const fill     = document.getElementById("progressFill");
+      overlay.style.display = "flex";
+      loadPhase = 0; msgIdx = 0;
+
+      // Reset steps
+      for (let i = 0; i < 4; i++) {
+        const s = document.getElementById(`lstep-${i}`);
+        s.classList.remove("active", "done");
+        document.getElementById(`lstep-${i}-check`).textContent = "";
+      }
+      document.getElementById("lstep-0").classList.add("active");
+      fill.style.width = "0%";
+
+      // Fake progress: ease up to 90% over 50s
+      let pct = 0;
+      progressTimer = setInterval(() => {
+        pct = Math.min(90, pct + (90 - pct) * 0.025 + 0.3);
+        fill.style.width = pct + "%";
+      }, 600);
+
+      // Step transitions
+      const stepTimes = [0, 8000, 18000, 32000];
+      stepTimes.forEach((t, i) => {
+        setTimeout(() => advanceStep(i), t);
+      });
+
+      // Cycle mood-specific messages
+      const msgs = MOOD_MESSAGES[selectedMood] || MOOD_MESSAGES.auto;
+      updateLoadMsg(msgs[0]);
+      loadTimer = setInterval(() => {
+        msgIdx = (msgIdx + 1) % msgs.length;
+        updateLoadMsg(msgs[msgIdx]);
+      }, 3500);
+    }
+
+    function advanceStep(idx) {
+      if (idx > 0) {
+        const prev = document.getElementById(`lstep-${idx-1}`);
+        prev.classList.remove("active");
+        prev.classList.add("done");
+        document.getElementById(`lstep-${idx-1}-check`).textContent = "✅";
+      }
+      const cur = document.getElementById(`lstep-${idx}`);
+      if (cur) cur.classList.add("active");
+    }
+
+    function updateLoadMsg([emoji, text]) {
+      document.getElementById("loadEmoji").textContent = emoji;
+      document.getElementById("loadTitle").textContent = text;
+    }
+
+    function stopLoading() {
+      clearInterval(loadTimer);
+      clearInterval(progressTimer);
+      document.getElementById("progressFill").style.width = "100%";
+      setTimeout(() => {
+        document.getElementById("loadingOverlay").style.display = "none";
+      }, 400);
+    }
+
+    // ── Analyze ──
+    async function analyze() {
+      const url = document.getElementById("urlInput").value.trim();
+      if (!url) return showError("Drop a YouTube link first 🔗");
+
+      clearMessages();
+      document.getElementById("results").innerHTML = "";
+      document.getElementById("analyzeBtn").disabled = true;
+      startLoading();
+
+      try {
+        const res  = await fetch("/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, mood: selectedMood, custom_prompt: document.getElementById("customPrompt").value.trim() })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) { showError(data.error || "Something broke 😬"); return; }
+
+        currentVideoPath = data.video_path;
+        currentTitle     = data.title;
+        currentAnalysis  = data.analysis;
+
+        renderResults(data);
+        showSuccess(`🎉 Found ${data.analysis.clips?.length || 0} clips for "${data.title}"`);
+        document.getElementById("results").scrollIntoView({ behavior: "smooth" });
+      } catch (e) {
+        showError("Error: " + e.message);
+      } finally {
+        stopLoading();
+        document.getElementById("analyzeBtn").disabled = false;
+      }
+    }
+
+    // ── Render ──
+    function vibeInfo(virality, conf) {
+      const v = (virality || "").toLowerCase();
+      if (v === "viral"  || conf >= 9) return { cls:"vibe-viral",  icon:"🔥", label:"VIRAL"  };
+      if (v === "high"   || conf >= 7) return { cls:"vibe-high",   icon:"⚡", label:"HIGH"   };
+      if (v === "medium" || conf >= 5) return { cls:"vibe-medium", icon:"💪", label:"SOLID"  };
+      return                                  { cls:"vibe-low",    icon:"📈", label:"DECENT" };
+    }
+
+    function topGrad(virality, conf) {
+      const v = (virality || "").toLowerCase();
+      if (v === "viral"  || conf >= 9) return "linear-gradient(90deg,#F97316,#EF4444)";
+      if (v === "high"   || conf >= 7) return "linear-gradient(90deg,#8B5CF6,#EC4899)";
+      if (v === "medium" || conf >= 5) return "linear-gradient(90deg,#3B82F6,#06B6D4)";
+      return "linear-gradient(90deg,#374151,#6B7280)";
+    }
+
+    function renderResults(data) {
+      const { analysis } = data;
+      const clips  = analysis.clips || [];
+      const music  = analysis.music_suggestions || [];
+      const score  = analysis.content_score || 0;
+      const emoji  = score >= 9 ? "🔥" : score >= 7 ? "⚡" : score >= 5 ? "💪" : "📊";
+
+      let html = `
+        <div class="score-banner">
+          <div class="score-num">${score}<span style="font-size:2rem;opacity:0.5">/10</span></div>
+          <div class="score-right">
+            <div class="score-label">${emoji} Viral Score</div>
+            <div class="score-reason">${esc(analysis.score_reason || "")}</div>
+          </div>
+        </div>`;
+
+      if (music.length) {
+        html += `<div class="music-row">`;
+        music.forEach(m => { html += `<span class="music-chip">🎵 ${esc(m.genre)} · ${esc(m.energy)} · ${esc(m.vibe)}</span>`; });
+        html += `</div>`;
+      }
+
+      html += `<div class="section-hdr"><h2>✂️ Clips (${clips.length})</h2><button class="btn-dark" onclick="downloadPlan()">📋 Edit Plan</button></div>`;
+
+      clips.forEach((clip, i) => {
+        const start = clip.start || clip.start_time || "00:00:00";
+        const end   = clip.end   || clip.end_time   || "00:00:30";
+        const conf  = clip.confidence || 5;
+        const vi    = vibeInfo(clip.virality, conf);
+        const grad  = topGrad(clip.virality, conf);
+        const dur   = Math.round(toSec(end) - toSec(start));
+        const id    = clip.id || (i + 1);
+        const hook  = clip.hook_text || (clip.caption || "").split("\n")[0] || "";
+
+        html += `
+          <div class="clip-card">
+            <div class="clip-top-bar" style="background:${grad}"></div>
+            <div class="clip-body">
+              <div class="clip-row1">
+                <div class="clip-left">
+                  <span class="clip-num">Clip ${id}</span>
+                  <span class="time-pill">${start} → ${end} · ${dur}s</span>
+                </div>
+                <span class="vibe-badge ${vi.cls}">${vi.icon} ${vi.label}</span>
+              </div>
+              <div class="conf-row">
+                <span class="conf-label">Confidence ${conf}/10</span>
+                <div class="conf-track"><div class="conf-fill" style="width:${conf*10}%;background:${grad}"></div></div>
+              </div>
+              ${clip.mood_type ? `<span class="mood-chip">${clip.mood_type}</span>` : ""}
+              <div class="reason-text">${esc(clip.reason || "")}</div>
+              ${clip.post_description ? `<div class="post-desc-box">💡 ${esc(clip.post_description)}</div>` : ""}
+              <div class="hook-label">🔤 Text burned into video</div>
+              <div class="hook-display">${esc(hook)}</div>
+              <div class="trans-row">
+                <span class="trans-chip">↘ In: ${esc(clip.transition_in||"—")}</span>
+                <span class="trans-chip">↗ Out: ${esc(clip.transition_out||"—")}</span>
+              </div>
+              <div class="caption-label">Post caption</div>
+              <div class="caption-box" id="cap-${i}">${esc(clip.caption || "")}</div>
+              <div class="effects-row">
+                <div class="effect-group">
+                  <span class="effect-label-sm">Live captions</span>
+                  <div class="sub-wrap">
+                    <button class="sub-btn active" id="subBtn-${i}" onclick="toggleSub(${i})">On</button>
+                    <button class="sub-btn"        id="subOff-${i}" onclick="toggleSubOff(${i})">Off</button>
+                  </div>
+                </div>
+              </div>
+              <div class="card-actions">
+                <button class="btn-ghost"  id="prevBtn-${i}" onclick="previewClip(${i},'${start}','${end}',${id},'${escAttr(hook)}')">▶ Preview</button>
+                <button class="btn-purple" id="dlBtn-${i}" onclick="dlClip(this,'${start}','${end}',${id},'${escAttr(hook)}')">⬇ Download</button>
+                <button class="btn-green"  onclick="copyCap(${i})">📋 Copy Caption</button>
+              </div>
+              <div class="player-wrap" id="pw-${i}">
+                <div class="player-loading" id="pl-${i}"><div class="mini-spin"></div> Rendering clip...</div>
+                <video id="vid-${i}" controls playsinline></video>
+              </div>
+            </div>
+          </div>`;
+      });
+
+      document.getElementById("results").innerHTML = html;
+    }
+
+    async function previewClip(idx, start, end, clipId, hookText) {
+      const pw  = document.getElementById(`pw-${idx}`);
+      const pl  = document.getElementById(`pl-${idx}`);
+      const vid = document.getElementById(`vid-${idx}`);
+      const btn = document.getElementById(`prevBtn-${idx}`);
+      const fx  = getEffects(idx);
+      pw.style.display = "block"; pl.style.display = "flex";
+      vid.src = ""; btn.disabled = true; btn.textContent = "⏳ Rendering...";
+      try {
+        const res = await fetch("/preview", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            video_path: currentVideoPath, start, end, clip_id: clipId, hook_text: hookText,
+            caption_color: fx.color, caption_position: fx.position, active_subs: fx.activeSubs
+          })
+        });
+        if (!res.ok) { const e = await res.json(); showError(e.error||"Preview failed."); pw.style.display="none"; return; }
+        vid.src = URL.createObjectURL(await res.blob());
+        vid.play();
+      } catch (e) { showError("Preview error: "+e.message); pw.style.display="none"; }
+      finally { pl.style.display="none"; btn.disabled=false; btn.textContent="▶ Preview"; }
+    }
+
+    async function dlClip(btn, start, end, clipId, hookText) {
+      const idx      = btn.id.replace("dlBtn-","");
+      const fx       = getEffects(parseInt(idx));
+      const origText = btn.textContent;
+      btn.disabled = true; btn.textContent = "⏳ Rendering...";
+      try {
+        const res = await fetch("/download-clip", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            video_path: currentVideoPath, start, end, clip_id: clipId, hook_text: hookText,
+            caption_color: fx.color, caption_position: fx.position, active_subs: fx.activeSubs
+          })
+        });
+        if (!res.ok) { const e = await res.json(); showError(e.error||"Download failed."); return; }
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(await res.blob());
+        a.download = `clip_${clipId}.mp4`; a.click();
+        btn.textContent = "✓ Downloaded!";
+        setTimeout(() => { btn.textContent = origText; btn.disabled = false; }, 2000);
+        return;
+      } catch (e) { showError("Download error: "+e.message); }
+      btn.disabled = false; btn.textContent = origText;
+    }
+
+    async function downloadPlan() {
+      try {
+        const res = await fetch("/download-plan", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: currentTitle, analysis: currentAnalysis })
+        });
+        if (!res.ok) { showError("Plan export failed."); return; }
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(await res.blob());
+        a.download = "edit_plan.txt"; a.click();
+      } catch (e) { showError("Export error: "+e.message); }
+    }
+
+    function copyCap(idx) {
+      navigator.clipboard.writeText(document.getElementById(`cap-${idx}`).innerText)
+        .then(() => showSuccess("📋 Caption copied!"));
+    }
+
+    function toSec(tc) {
+      if (!tc) return 0;
+      const p = String(tc).split(":").map(Number);
+      if (p.length===3) return p[0]*3600+p[1]*60+p[2];
+      if (p.length===2) return p[0]*60+p[1];
+      return p[0]||0;
+    }
+
+    function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+    function escAttr(s) { return String(s).replace(/'/g,"&#39;").replace(/"/g,"&quot;").replace(/\n/g," ").replace(/\r/g,""); }
+
+    function showError(msg) { const el=document.getElementById("errorMsg"); el.textContent=msg; el.style.display="block"; }
+    function showSuccess(msg) { const el=document.getElementById("successMsg"); el.textContent=msg; el.style.display="block"; }
+    function clearMessages() { document.getElementById("errorMsg").style.display="none"; document.getElementById("successMsg").style.display="none"; }
+  </script>
+</body>
+</html>

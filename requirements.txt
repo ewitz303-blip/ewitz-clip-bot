@@ -1,0 +1,7 @@
+flask
+flask-cors
+yt-dlp
+anthropic
+python-dotenv
+Pillow
+gunicorn
