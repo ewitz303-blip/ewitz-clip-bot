@@ -327,11 +327,15 @@ def build_caption_overlays(vtt_path, clip_start, clip_duration):
 # ─────────────────────────────────────────────
 
 def _yt_dlp_base_args():
-    """Base yt-dlp args — android client with cookies bypasses bot detection."""
-    args = ["--extractor-args", "youtube:player_client=android,web"]
+    """Base yt-dlp args — web client with cookies + node for JS challenge solving."""
+    import shutil
+    args = ["--extractor-args", "youtube:player_client=web"]
     cookies = Path("cookies.txt")
     if cookies.exists():
         args += ["--cookies", str(cookies)]
+    node = shutil.which("node") or shutil.which("nodejs")
+    if node:
+        args += ["--js-runtimes", f"node:{node}"]
     return args
 
 def download_video(url):
