@@ -339,8 +339,12 @@ def _yt_dlp_base_args():
         if proxy:
             args += ["--proxy", proxy]
     else:
-        # Running locally on Mac — use Chrome cookies directly
-        args += ["--cookies-from-browser", "chrome"]
+        # Running locally on Mac — use Chrome cookies + node JS runtime
+        args += [
+            "--cookies-from-browser", "chrome",
+            "--js-runtimes", "node:/usr/local/bin/node",
+            "--remote-components", "ejs:github",
+        ]
     return args
 
 def download_video(url):
