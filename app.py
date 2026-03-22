@@ -317,12 +317,12 @@ def build_caption_overlays(vtt_path, clip_start, clip_duration):
 # ─────────────────────────────────────────────
 
 def _yt_dlp_base_args():
-    """Base yt-dlp args — uses iOS player client to bypass bot detection."""
-    args = ["--extractor-args", "youtube:player_client=ios"]
-    cookies = Path("cookies.txt")
-    if cookies.exists():
-        args += ["--cookies", str(cookies)]
-    return args
+    """Base yt-dlp args — tries ios then android_vr to bypass bot detection."""
+    return [
+        "--extractor-args", "youtube:player_client=ios,android_vr",
+        "--sleep-requests", "1",
+        "--no-check-certificates",
+    ]
 
 def download_video(url):
     base = _yt_dlp_base_args()
