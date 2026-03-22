@@ -316,14 +316,24 @@ def build_caption_overlays(vtt_path, clip_start, clip_duration):
 # VIDEO DOWNLOAD
 # ─────────────────────────────────────────────
 
+def _yt_dlp_base_args():
+    """Base yt-dlp args — adds cookies file if present, adds node JS runtime if available."""
+    args = []
+    cookies = Path("cookies.txt")
+    if cookies.exists():
+        args += ["--cookies", str(cookies)]
+    import shutil
+    node = shutil.which("node")
+    if node:
+        args += ["--js-runtimes", f"node:{node}"]
+    return args
+
 def download_video(url):
+    base = _yt_dlp_base_args()
+
     # Metadata
     meta_res = subprocess.run(
-        [
-            "python3", "-m", "yt_dlp",
-            "--dump-json", "--no-playlist",
-            url
-        ],
+        ["python3", "-m", "yt_dlp", "--dump-json", "--no-playlist"] + base + [url],
         capture_output=True, text=True, timeout=60
     )
     meta     = json.loads(meta_res.stdout) if meta_res.returncode == 0 else {}
@@ -338,8 +348,7 @@ def download_video(url):
             "-f", "bestvideo[height<=720]+bestaudio/bestvideo+bestaudio/best",
             "--merge-output-format", "mp4",
             "-o", out_tpl,
-            url
-        ],
+        ] + base + [url],
         capture_output=True, text=True, timeout=300
     )
     if dl.returncode != 0:
@@ -355,8 +364,7 @@ def download_video(url):
             "--sub-format", "vtt",
             "--skip-download",
             "-o", str(DOWNLOADS / "%(id)s.%(ext)s"),
-            url
-        ],
+        ] + base + [url],
         capture_output=True, text=True, timeout=60
     )
 
